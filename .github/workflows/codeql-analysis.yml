@@ -65,18 +65,44 @@ jobs:
     #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
 
     - run: |
-        # clone the repository
+      # Install Conan
+        pip install --no-cache-dir conan
+      # Create Conan configuration
+      # init config
+        CONAN_V2_MODE=1 conan config init
+        conan config set general.revisions_enabled=1
+        conan remote add ns1labs https://ns1labs.jfrog.io/artifactory/api/conan/ns1labs-conan
+      # add custom compiler settings for libc
+        python3 -c 'import yaml; p = "${{env.CONAN_USER_HOME}}/.conan/settings.yml"; d = yaml.safe_load(open(p)); d["compiler"]["gcc"]["libc"] = ["None", "glibc", "musl"]; yaml.safe_dump(d, open(p, "w"))'
+      # Create Conan host profile
+        cat > "${{env.CONAN_USER_HOME}}/.conan/profiles/host" << "EOF"
+        [settings]
+        os=Linux
+        os_build=Linux
+        arch=${{matrix.conan_arch}}
+        arch_build=x86_64
+        compiler=gcc
+        compiler.version=11
+        compiler.libcxx=libstdc++11
+        compiler.libc=musl
+        build_type=Release
+        [options]
+        pcapplusplus:with_musl=True
+        [build_requires]
+        [env]
+        CC=${{github.workspace}}/toolchain/bin/${{matrix.cc}}
+        CXX=${{github.workspace}}/toolchain/bin/${{matrix.cxx}}
+        LDFLAGS=${{matrix.ldflags}}
+        EOF
+      # clone the repository
         git clone https://github.com/ns1labs/pktvisor.git
         cd pktvisor
         mkdir build && cd build
-
-        # configure and handle dependencies 
+      # configure and handle dependencies 
         cmake -DCMAKE_BUILD_TYPE=Release ..
-
-        # build and run tests
+      # build and run tests
         make all test
-    #   echo "Run, Build Application using script"
-    #jobs:
+    # echo "Run, Build Application using script"
     
 
     - name: Perform CodeQL Analysis
