@@ -36,6 +36,11 @@ jobs:
         # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 
+    env:
+      CC: gcc-10
+      CXX: g++-10
+      CONAN_USER_HOME: "${{github.workspace}}"
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
